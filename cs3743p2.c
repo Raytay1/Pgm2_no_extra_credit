@@ -170,14 +170,14 @@ Return value:
 **************************************************************************/
 int vehicleInsert(HashFile *pHashFile, Vehicle *pVehicle)
 {
-    int i, rc, rc2, RBN;
+    int i, rc, RBN;
     Vehicle rVehicle;
 
     RBN = hash(pVehicle->szVehicleId, pHashFile->hashHeader.iMaxHash);
     rc = readRec(&(*pHashFile), RBN, &rVehicle);
     if(rc == RC_LOC_NOT_FOUND || rVehicle.szVehicleId[0] == '\0')
     {
-        rc2 = writeRec(&(*pHashFile), RBN, &(*pVehicle));
+        writeRec(&(*pHashFile), RBN, &(*pVehicle));
     }
     else if(rc == RC_OK && (strcmp(pVehicle->szVehicleId, rVehicle.szVehicleId)==0))
     {
@@ -203,7 +203,7 @@ int vehicleInsert(HashFile *pHashFile, Vehicle *pVehicle)
         }
         if(nRBN != -1)
         {
-            rc2 = writeRec(&(*pHashFile), nRBN, &(*pVehicle));
+            writeRec(&(*pHashFile), nRBN, &(*pVehicle));
         }else
         {
             return RC_TOO_MANY_COLLISIONS;
@@ -318,5 +318,29 @@ Return value:
 int vehicleDelete(HashFile *pHashFile, char *pszVehicleId)
 {
     // extra credit
-    return RC_NOT_IMPLEMENTED;
+    int i, RBN;
+    Vehicle rVehicle, zVehicle;
+    memset(&zVehicle, 0, sizeof(Vehicle));
+
+    RBN = hash(pszVehicleId, pHashFile->hashHeader.iMaxHash);
+
+    for(i=0;i<pHashFile->hashHeader.iMaxProbe;i++)
+    {
+        if(RBN+i > pHashFile->hashHeader.iMaxHash)
+        {
+            return RC_REC_NOT_FOUND; // went past max amount of records
+        }
+
+        readRec(&(*pHashFile), RBN+i, &rVehicle);
+
+        if(strcmp(pszVehicleId, rVehicle.szVehicleId) == 0)
+        {
+            writeRec(&(*pHashFile), RBN+i, &zVehicle);
+            return RC_OK;
+        }
+
+    }
+    // if loop ends max probes reached
+    return RC_REC_NOT_FOUND;
+
 }
